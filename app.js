@@ -1,31 +1,42 @@
+(function() {
 // creating global parameters and start
 // listening to 'port', we are creating an express
 // server and then we are binding it with socket.io
-var express 	= require('express'),
-    app		= express(),
-    server  	= require('http').createServer(app),
-    io      	= require('socket.io').listen(server),
-    port    	= 3010,
-    logger	= require('logger-sharelatex'),
+var express, app, server, host, port, io, logger, settings;
 
-    // hash object to save clients data,
-    // { socketid: { clientid, nickname }, socketid: { ... } }
-    chatClients = new Object();
+  express = require('express');
+  app	  = express();
 
-// listening to port...
-server.listen(port);
+  logger  = require('logger-sharelatex');
+  logger.initialize("chat-sharelatex");
 
-logger.initialize("chat-sharelatex");
+  settings = require("settings-sharelatex");
+
+  // hash object to save clients data,
+  // { socketid: { clientid, nickname }, socketid: { ... } }
+  chatClients = new Object();
+
+  // listening to port...
+  server = require('http').createServer(app);
+  port = settings.internal.chat.port || 3010;
+  host = settings.internal.chat.host || "localhost";
+  server.listen(port, function() {
+      return logger.log("Chat server listening on " + host + ":" + port);
+  });
+
+  io = require('socket.io').listen(server);
+
 // configure express, since this server is
 // also a web server, we need to define the
 // paths to the static files
+var path = require("path");
+console.log("chat . = %s", path.resolve("."));
+console.log("chat __dirname = %s", path.resolve(__dirname));
+
 app.use("/styles", express.static(__dirname + '/public/styles'));
 app.use("/scripts", express.static(__dirname + '/public/scripts'));
 app.use("/images", express.static(__dirname + '/public/images'));
 
-// serving the main applicaion file (index.html)
-// when a client makes a request to the app root
-// (http://localhost:8080/)
 app.get('/', function (req, res) {
 	res.sendfile(__dirname + '/public/index.html');
 });
@@ -282,5 +293,4 @@ function whisper(data){
   return data;
 }
 
-// show a message in console
-logger.log("Chat server listening to port " + port);
+}).call(this);
